@@ -1064,6 +1064,18 @@ body{font-family:'Onest',system-ui,sans-serif;background:var(--canvas);color:var
 .isk-submit.is-loading{opacity:.7;pointer-events:none}
 .isk-disclaimer{margin:14px 0 0;font-size:11px;line-height:1.4;color:rgba(255,255,255,.45);text-align:center}
 .isk-disclaimer a{color:#FF6F61;text-decoration:underline}
+.pd-consent{display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:14px 0 0;user-select:none}
+.pd-consent input{position:absolute;opacity:0;pointer-events:none}
+.pd-consent .pd-box{flex:0 0 auto;width:19px;height:19px;margin-top:1px;border:1.5px solid rgba(255,255,255,.25);border-radius:6px;background:rgba(255,255,255,.06);position:relative;transition:border-color .2s,background .2s}
+.pd-consent:hover .pd-box{border-color:rgba(255,255,255,.45)}
+.pd-consent input:checked + .pd-box{background:#FF6F61;border-color:#FF6F61}
+.pd-consent input:checked + .pd-box::after{content:'';position:absolute;left:5.5px;top:2px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.pd-consent .pd-txt{font-size:11.5px;line-height:1.5;color:rgba(255,255,255,.55);text-align:left}
+.pd-consent .pd-txt a{color:#FF6F61;text-decoration:underline;text-underline-offset:2px}
+.pd-consent.is-error .pd-box{border-color:#E24B4A}
+.pd-consent.is-error .pd-txt{color:#FF8A80}
+.pd-err{display:none;font-size:11.5px;color:#FF8A80;margin-top:6px;text-align:left}
+.pd-consent.is-error + .pd-err{display:block}
 .isk-thanks{width:100%;max-width:460px;text-align:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:40px 32px}
 .isk-thanks .check{width:64px;height:64px;margin:0 auto 18px;border-radius:50%;background:linear-gradient(135deg,#FF6F61,#E04E40);display:flex;align-items:center;justify-content:center;color:#fff}
 .isk-thanks h3{font-size:24px;font-weight:800;color:#fff;margin-bottom:10px}
@@ -1096,11 +1108,17 @@ body{font-family:'Onest',system-ui,sans-serif;background:var(--canvas);color:var
       <input type="text" name="telegram" maxlength="80" placeholder="@username">
     </label>
     <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;opacity:0;" aria-hidden="true">
+    <!-- Согласие на обработку ПД — отдельная отметка (ст. 9 152-ФЗ, ред. 156-ФЗ) -->
+    <label class="pd-consent" id="iskConsent">
+      <input type="checkbox" name="pd">
+      <span class="pd-box" aria-hidden="true"></span>
+      <span class="pd-txt">Даю <a href="soglasie.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a> на условиях <a href="privacy.html" target="_blank" rel="noopener">Политики конфиденциальности</a></span>
+    </label>
+    <div class="pd-err">Поставьте отметку о согласии — без неё мы не вправе принять заявку</div>
     <button type="submit" class="isk-submit">
       <span class="isk-submit-label">Записаться на курс</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
     </button>
-    <p class="isk-disclaimer">Нажимая кнопку, вы соглашаетесь на обработку персональных данных в&nbsp;соответствии с&nbsp;<a href="privacy.html" target="_blank" rel="noopener">Политикой конфиденциальности</a>.</p>
   </form>
 
   <div class="isk-thanks" id="iskThanks" hidden>
@@ -1118,6 +1136,8 @@ body{font-family:'Onest',system-ui,sans-serif;background:var(--canvas);color:var
   var TG_CHAT_ID='329280773';
   function esc(s){return String(s||'').replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
   function showThanks(name){form.hidden=true;document.getElementById('iskThanksName').textContent=name||'друг';thanks.hidden=false;thanks.scrollIntoView({block:'center',behavior:'smooth'});}
+  var pdIn=form.querySelector('input[name="pd"]');
+  if(pdIn)pdIn.addEventListener('change',function(){if(pdIn.checked)document.getElementById('iskConsent').classList.remove('is-error');});
   form.addEventListener('submit',function(e){
     e.preventDefault(); if(submit.classList.contains('is-loading')) return;
     var hp=form.querySelector('input[name="company"]'); if(hp&&hp.value){showThanks(form.name.value);return;}
@@ -1127,6 +1147,11 @@ body{font-family:'Onest',system-ui,sans-serif;background:var(--canvas);color:var
       var i=form.querySelector('input[name="'+p[0]+'"]');
       if(!p[1]||(p[0]==='phone'&&p[1].replace(/\D/g,'').length<7)){i.classList.add('is-error');ok=false;}else{i.classList.remove('is-error');}
     });
+    // ОБЯЗАТЕЛЬНОЕ согласие на обработку ПД (ст. 9 152-ФЗ)
+    var pdBox=form.querySelector('input[name="pd"]');
+    var pdWrap=document.getElementById('iskConsent');
+    if(!pdBox||!pdBox.checked){if(pdWrap)pdWrap.classList.add('is-error');ok=false;}
+    else if(pdWrap){pdWrap.classList.remove('is-error');}
     if(!ok) return;
     submit.classList.add('is-loading');
     var ts=new Date().toISOString();
@@ -1634,7 +1659,7 @@ body.lm-locked { overflow: hidden !important; }
       <div class="nvf-col">
         <div class="nvf-h">Документы</div>
         <a href="privacy.html">Политика конфиденциальности</a>
-        <a href="privacy.html">Согласие на обработку ПД</a>
+        <a href="soglasie.html">Согласие на обработку ПД</a>
         <a href="oferta.html">Договор-оферта</a>
       </div>
       <div class="nvf-col">
